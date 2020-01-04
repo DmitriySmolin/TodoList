@@ -39,11 +39,12 @@ const tasks = [{
   const form = document.forms['addTask'];
   const inputTitle = form.elements['title'];
   const inputBody = form.elements['body'];
-  console.log(inputTitle, inputBody);
+  //console.log(inputTitle, inputBody);
 
   //Events
-
+  renderAllTasks(objOfTasks);
   form.addEventListener('submit', onFormSubmitHandler);
+  listCotainer.addEventListener('click', onDeleteHandler); //поскольку список задач генерируется динамически мы не можем именно кнопки, поэтому обработчик события был повешен на родительский элемент и за счет делегирования мы получаем доступ к кнопкам
 
   //ф-ция создает fragment и добавляет fragment в listContainer
   function renderAllTasks(tasksList) {
@@ -62,8 +63,6 @@ const tasks = [{
     listCotainer.append(fragment);
 
   };
-  renderAllTasks(objOfTasks);
-
 
   //ф-ция создает шаблон li элемента
   function listItemTemplate({
@@ -73,6 +72,7 @@ const tasks = [{
   } = {}) {
     const li = document.createElement('li');
     li.classList.add('list-group-item', 'd-flex', 'align-items-center', 'flex-wrap', 'mt-2');
+    li.setAttribute('data-task-id', _id); //добавялем каждому li _id для того чтобы потом определить какой конкретно элемент мы хотим удалить  из DOM
 
     const span = document.createElement('span');
     span.textContent = title;
@@ -125,6 +125,49 @@ const tasks = [{
     return {
       ...newTask //возвращаем копию задачи
     };
+  };
+
+
+  //ф-ция удаляет задачу из DOM дерева
+  function deleteTaskFromHtml(confirmed, parent) {
+    if (!confirmed) return;
+    parent.remove();
+  }
+
+  //ф-ция удаляет задачу из объекта
+  function deleteTaskFromObj(id) {
+    //console.log(objOfTasks[id]);
+
+    const {
+      title
+    } = objOfTasks[id] //достаем title из объекта objOfTasks title}
+
+    const isConfirm = confirm(`Вы действительно хотите удалить задачу: ${title}`);
+    //console.log(isConfirm);
+
+    if (!isConfirm) return isConfirm; // если отказался удалять возвращаем isConfirm  с текущим состоянием
+    delete objOfTasks[id];
+
+    return isConfirm // если задача была удалена, возвращаем isConfirm с измененным состоянием
+
+  }
+
+  function onDeleteHandler({
+    target
+  }) {
+    if (target.classList.contains('delete-btn')) { // если мы кликаем на элемент содержащий class 'delete-btn'
+      const parent = target.closest('[data-task-id]'); // находим родителя (li) у этого элемента по data-task-id
+      const id = parent.dataset.taskId; //получаем id родительско  элемента (li)
+
+      //console.log(id);
+      //console.log(parent);
+
+      const confirmed = deleteTaskFromObj(id); //ф-ция удаляет задачу из объекта и  возвращает состояние isConfirm (true или false)
+      //console.log(confirmed);
+
+      deleteTaskFromHtml(confirmed, parent);
+    };
+
   };
 
 })(tasks);
