@@ -26,6 +26,7 @@ const tasks = [{
 
 //самовызывающаяся ф-ция позволяет скрыть переменные от глобальной области, защитив от переопределения
 (function (arrOfTasks) {
+  //console.log(arrOfTasks.length)
   //формируем объект объектов, где ключами являются id, а значениями вложенные объекты
   const objOfTasks = arrOfTasks.reduce((acc, task) => {
     acc[task._id] = task;
@@ -41,10 +42,33 @@ const tasks = [{
   const inputBody = form.elements['body'];
   //console.log(inputTitle, inputBody);
 
+  //ф-ция создает buttons:showAllTasks, showUnfinishedTasks
+  (function createButton() {
+    const showAllTasks = document.createElement('button');
+    showAllTasks.textContent = 'showAllTasks';
+    showAllTasks.classList.add('btn', 'btn-info');
+
+    const showUnfinishedTasks = document.createElement('button');
+    showUnfinishedTasks.textContent = 'showUnfinishedTasks';
+    showUnfinishedTasks.classList.add('btn', 'btn-warning');
+
+    document.querySelector('.btn-group').append(showAllTasks);
+    document.querySelector('.btn-group ').append(showUnfinishedTasks);
+  }());
+
   //Events
   renderAllTasks(objOfTasks);
   form.addEventListener('submit', onFormSubmitHandler);
-  listCotainer.addEventListener('click', onDeleteHandler); //поскольку список задач генерируется динамически мы не можем именно кнопки, поэтому обработчик события был повешен на родительский элемент и за счет делегирования мы получаем доступ к кнопкам
+  //поскольку список задач генерируется динамически мы не можем именно на кнопки навесить, поэтому обработчик события был повешен на родительский элемент и за счет делегирования мы получаем доступ к кнопкам
+  listCotainer.addEventListener('click', onDeleteHandler);
+  listCotainer.addEventListener('click', onPerformTask);
+
+  const btnShowUnfinishedTasks = document.querySelector('.btn-warning');
+  btnShowUnfinishedTasks.addEventListener('click', showUnfinishedTasks);
+
+  const btnshowAllTasks = document.querySelector('.btn-info');
+  btnshowAllTasks.addEventListener('click', showAllTasks);
+
 
   //ф-ция создает fragment и добавляет fragment в listContainer
   function renderAllTasks(tasksList) {
@@ -62,6 +86,21 @@ const tasks = [{
     });
     listCotainer.append(fragment);
 
+  };
+
+  //ф-ция выводит все незавершенные  задачи
+  function showUnfinishedTasks() {
+    const completeTasks = onPerformTask() || objOfTasks;
+
+    const isComplete = Object.keys(completeTasks).filter(task => completeTasks[task].completed);
+    isComplete.forEach(id => {
+      document.querySelector(`li[data-task-id="${id}"]`).classList.add('hidden');
+    })
+  };
+
+  //ф-ция выводит все задачи
+  function showAllTasks() {
+    document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('hidden'));
   };
 
   //ф-ция создает шаблон li элемента
@@ -82,6 +121,10 @@ const tasks = [{
     deleteBtn.textContent = 'Delete task';
     deleteBtn.classList.add('btn', 'btn-danger', 'ml-auto', 'delete-btn');
 
+    const performBtn = document.createElement('button');
+    performBtn.textContent = 'Perform task';
+    performBtn.classList.add('btn', 'btn-success');
+
     const article = document.createElement('p');
     article.textContent = body;
     article.classList.add('mt-2', 'w-100');
@@ -89,6 +132,7 @@ const tasks = [{
     li.append(span);
     li.append(deleteBtn);
     li.append(article);
+    li.append(performBtn);
     //console.log(li);
     return li;
   };
@@ -132,6 +176,9 @@ const tasks = [{
   function deleteTaskFromHtml(confirmed, parent) {
     if (!confirmed) return;
     parent.remove();
+
+    //если в объекте удалены все задачи вызываем ф-цию isArrEmpty
+    if (Object.keys(objOfTasks).length === 0) isArrEmpty(objOfTasks);
   }
 
   //ф-ция удаляет задачу из объекта
@@ -152,6 +199,7 @@ const tasks = [{
 
   }
 
+
   function onDeleteHandler({
     target
   }) {
@@ -162,7 +210,7 @@ const tasks = [{
       //console.log(id);
       //console.log(parent);
 
-      const confirmed = deleteTaskFromObj(id); //ф-ция удаляет задачу из объекта и  возвращает состояние isConfirm (true или false)
+      const confirmed = deleteTaskFromObj(id); //ф-ция удаляет задачу по id из объекта и  возвращает состояние isConfirm (true или false)
       //console.log(confirmed);
 
       deleteTaskFromHtml(confirmed, parent);
@@ -170,4 +218,35 @@ const tasks = [{
 
   };
 
-})(tasks);
+  //ф-ция выделяет задачу как выполненную
+  function onPerformTask({
+    target
+  } = {}) {
+    if (!target) return;
+
+    if (target.classList.contains('btn-success')) {
+      const parent = target.closest('[data-task-id]');
+      const id = parent.dataset.taskId;
+      parent.classList.toggle('active');
+
+      if (parent.classList.contains('active')) { //если задача выполнена, то в объекте св-во completed = true
+        objOfTasks[id].completed = true
+      } else {
+        objOfTasks[id].completed = false;
+      }
+    }
+    return objOfTasks;
+  };
+
+  //ф-ция проверяет остались ли еще задачи
+  (function isArrEmpty(obj) {
+    if (Object.keys(obj).length === 0) {
+      const div = document.createElement('div');
+      div.style.textAlign = 'center';
+      div.textContent = 'Задач нет';
+      document.querySelector('.row').insertAdjacentElement('afterend', div);
+    }
+  }(arrOfTasks));
+
+
+}(tasks))
