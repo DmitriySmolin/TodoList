@@ -108,8 +108,10 @@ const tasks = [{
   const inputTitle = form.elements['title'];
   const inputBody = form.elements['body'];
   //console.log(inputTitle, inputBody);
+
   const themeSelect = document.getElementById('themeSelect');
-  let lastSelectedTheme = 'default';
+  let lastSelectedTheme = localStorage.getItem('app_theme') || 'default'; // получаем значение из хранилище, если его нет берем default
+  themeSelect.value = lastSelectedTheme; // в select.value также установим  последнюю выбранную тему, чтобы не сбрасывалось при перезагрузке
 
   //ф-ция создает buttons:showAllTasks, showUnfinishedTasks
   (function createButton() {
@@ -139,7 +141,7 @@ const tasks = [{
   btnshowAllTasks.addEventListener('click', showAllTasks);
 
   themeSelect.addEventListener('change', onThemeSelectHandler);
-
+  setTheme(lastSelectedTheme); // вызываем setTheme и устанавливаем  последнюю выбранную тему из localStorage, чтобы не сбрасывалась стилизация при перезагрузке
 
   //ф-ция создает fragment и добавляет fragment в listContainer
   function renderAllTasks(tasksList) {
@@ -301,7 +303,7 @@ const tasks = [{
       parent.classList.toggle('active');
 
       if (parent.classList.contains('active')) { //если задача выполнена, то в объекте св-во completed = true
-        objOfTasks[id].completed = true
+        objOfTasks[id].completed = true;
       } else {
         objOfTasks[id].completed = false;
       }
@@ -332,6 +334,7 @@ const tasks = [{
     setTheme(selectedTheme);
 
     lastSelectedTheme = selectedTheme;
+    localStorage.setItem('app_theme', lastSelectedTheme);
     // console.log(selectedTheme);
   };
 
